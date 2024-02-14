@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Disabled people</string>
+    <string name="title_home">Для волонтёров</string>
+    <string name="title_dashboard">Для инвалидов</string>
+    <string name="title_notifications">Карта</string>
+    <string name="User_name">Ваше имя</string>
+    <string name="Task_name">Название заявки</string>
+    <string name="Task_description">Описание заявки</string>
+    <string name="Warning">Заполните все поля!</string>
+    <string name="Send_application">Отправить заявку</string>
+    <string name="Create_application">Создать заявку</string>
+    <string name="Creating_application">Создание заявки</string>
+</resources>
