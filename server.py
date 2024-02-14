@@ -1,4 +1,4 @@
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from flask import Flask, request
 
 
 class Application:
@@ -9,31 +9,25 @@ class Application:
         
 
 storage = set()
+app = Flask(__name__)
 
-class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b'Hello, world!')
+@app.route('/', methods=['POST'])
+def index():
+    user_name = request.headers.get('UserName')
+    app_name = request.headers.get('AppName')
+    app_desc = request.headers.get('AppDesc')
+    storage.add(Application(user_name, app_name, app_desc))
 
-    def do_POST(self):
-        user_name = self.headers['UserName']
-        app_name = self.headers['AppName']
-        app_desc = self.headers['AppDesc']
-
-        storage.add(Application(user_name, app_name, app_desc))
-
-        print("Success")
-        print("User name:" + user_name)
-        print("Application name:" + app_name)
-        print("Application description:" + app_desc)
-
+    print("Success")
+    print("User name:" + user_name)
+    print("Application name:" + app_name)
+    print("Application description:" + app_desc)
+    
+    return {"message": "Received data"}
 
 
 ip_address = "192.168.1.86"
 port = 5000
 
-httpd = HTTPServer((ip_address, port), SimpleHTTPRequestHandler)
 print(f"Server running at http://{ip_address}:{port}/")
-
-httpd.serve_forever()
+app.run(debug=True, host="192.168.1.86", port=5000)
