@@ -30,4 +30,4 @@ ip_address = "192.168.1.86"
 port = 5000
 
 print(f"Server running at http://{ip_address}:{port}/")
-app.run(debug=True, host="192.168.1.86", port=5000)
+app.run(debug=True, host=ip_address, port=port)
