@@ -10,4 +10,5 @@
     <string name="Send_application">Отправить заявку</string>
     <string name="Create_application">Создать заявку</string>
     <string name="Creating_application">Создание заявки</string>
+    <string name="Upadate_applications">Обновить список заявок</string>
 </resources>
