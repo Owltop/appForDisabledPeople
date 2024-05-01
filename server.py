@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+import argparse
 
 
 class Application:
@@ -27,10 +28,10 @@ def save_applications():
     app_desc = request.headers.get('AppDesc')
     storage.add(Application(user_name, app_name, app_desc))
 
-    '''print("Success")
+    print("Success")
     print("User name:" + user_name)
     print("Application name:" + app_name)
-    print("Application description:" + app_desc)'''
+    print("Application description:" + app_desc)
     
     return {"message": "Received data"}
 
@@ -38,9 +39,13 @@ def save_applications():
 def get_applications():
     return jsonify([{'userName': app.user_name, 'appName': app.app_name, 'appDesc': app.app_desc} for app in storage])
 
+ip_address = "0.0.0.0"
 
-ip_address = "192.168.1.86"
-port = 5000
+parser = argparse.ArgumentParser()
+parser.add_argument('--port', help='port', default=5050)
+
+args = parser.parse_args()
+port = args.port
 
 print(f"Server running at http://{ip_address}:{port}/")
 app.run(debug=True, host=ip_address, port=port)
