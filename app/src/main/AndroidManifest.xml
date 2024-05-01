@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -14,10 +16,16 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
         <activity
-            android:name=".ui.ApplicationFormActivity"
+            android:name=".ui.ShowApplicationsActivity"
+            android:exported="false"
+            android:label="@string/title_activity_show_applications"
             android:parentActivityName=".MainActivity"
+            android:theme="@style/Theme.DisabledPeople" />
+        <activity
+            android:name=".ui.ApplicationFormActivity"
+            android:exported="false"
             android:label="@string/Creating_application"
-            android:exported="false" />
+            android:parentActivityName=".MainActivity" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -29,7 +37,5 @@
             </intent-filter>
         </activity>
     </application>
-
-    <uses-permission android:name="android.permission.INTERNET" />
 
 </manifest>

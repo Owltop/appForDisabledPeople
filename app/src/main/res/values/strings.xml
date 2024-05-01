@@ -11,4 +11,6 @@
     <string name="Create_application">Создать заявку</string>
     <string name="Creating_application">Создание заявки</string>
     <string name="Upadate_applications">Обновить список заявок</string>
+    <string name="Show_applications">Посмотреть актуальные заявки</string>
+    <string name="title_activity_show_applications">Показ заявок</string>
 </resources>
