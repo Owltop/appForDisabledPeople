@@ -12,8 +12,6 @@ services:
       dockerfile: Dockerfile
     ports:
       - "5051:5050"
-    depends_on:
-      - user_db
   app2:
     image: app
     build:
@@ -21,14 +19,12 @@ services:
       dockerfile: Dockerfile
     ports:
       - "5052:5050"
-    depends_on:
-      - user_db
   user_db:
     image: postgres:latest
     environment:
-      POSTGRES_DB: yourdbname
-      POSTGRES_USER: yourdbuser
-      POSTGRES_PASSWORD: yourdbpassword
+      POSTGRES_DB: users
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin1234
     volumes:
       - ./data/db:/var/lib/postgresql/data
     ports:
