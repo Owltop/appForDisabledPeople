@@ -77,17 +77,17 @@ public class ApplicationFormActivity extends AppCompatActivity {
                 Log.e("6cwercwerc", "kke");
                 int responseCode = connection.getResponseCode();
                 if (responseCode == HttpURLConnection.HTTP_OK) {
-                    Log.e("sdcscsc", "kke");
-                    //Toast.makeText(this, "Заявка успешно отправлена", Toast.LENGTH_LONG).show();
+                    //Log.e("sdcscsc", "kke");
+                    Toast.makeText(this, "Заявка успешно отправлена", Toast.LENGTH_LONG).show();
                 } else {
-                    //Toast.makeText(this, "kek", Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "kek", Toast.LENGTH_LONG).show();
                 }
             } catch (SocketTimeoutException e) {
-                Log.e("2cwercwerc", "kke");
+                Log.e("2cwercwerc", serverUtil.SERVER_URL);
                 //Toast.makeText(this, "kek", Toast.LENGTH_LONG).show();
             } catch (IOException e) {
                 String errorMessage = "An error occurred: " + e.getMessage();
-                Log.e("4cwercwerc", errorMessage);
+                Log.e("4cwercwerc", errorMessage + serverUtil.SERVER_URL);
                 //Toast.makeText(this, "kek", Toast.LENGTH_LONG).show();
             } catch (RuntimeException e) {
                 Log.e("5cwercwerc", "kke");

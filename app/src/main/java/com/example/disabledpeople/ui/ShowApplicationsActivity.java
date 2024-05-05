@@ -19,6 +19,7 @@ import java.net.URL;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -27,14 +28,20 @@ import org.json.JSONObject;
 public class ShowApplicationsActivity extends AppCompatActivity {
     ArrayList<Application> applications = new ArrayList<>();
     int currentOffset = 0;
+    AtomicInteger flag = new AtomicInteger(0);
+    AtomicInteger flagGetResponse = new AtomicInteger(0);
 
-    private void SetUpApplicationModel() {
-        String[] applicationNames = getResources().getStringArray(R.array.for_recycler_view_test);
-
-        for (String applicationName : applicationNames) {
-            applications.add(new Application(applicationName, "kek", "lol"));
+    private void SetUpApplicationModel() throws InterruptedException {
+//        while (flag.incrementAndGet() != 1) { // Тут хрень написана, не спасает от того, что сразу несколько запросов могут быть посланы на сервер
+//            flag.decrementAndGet();
+//        }
+        // Communicating with server
+        flagGetResponse.set(0);
+        getInfoFromServer(currentOffset, 20);
+        while (flagGetResponse.get() != 1) {
+            // spinning
         }
-        // getInfoFromServer(currentOffset, 20);
+        //flag.decrementAndGet();
 
     }
     @Override
@@ -43,42 +50,46 @@ public class ShowApplicationsActivity extends AppCompatActivity {
         setContentView(R.layout.acivity_show_applications);
 
         RecyclerView recyclerView = findViewById(R.id.applicsRecyclerView);
-        SetUpApplicationModel();
+        try {
+            SetUpApplicationModel();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 
         AP_RecyclerViewAdapter apRecyclerViewAdapter = new AP_RecyclerViewAdapter(this, applications);
 
         recyclerView.setAdapter(apRecyclerViewAdapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-//        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-//            @Override
-//            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-//                int lastVisiblePosition = recyclerView.getChildAdapterPosition(recyclerView.getChildAt(recyclerView.getChildCount() - 1));
-//
-//                // Если достигнут конец списка и есть ещё объекты для загрузки
-//                if (lastVisiblePosition >= apRecyclerViewAdapter.getItemCount() - 1) {
-//                    // Загрузить больше объектов с сервера
-//                    int sizeOfApplicationsBeforeServerCommunication = applications.size();
-//                    getInfoFromServer(currentOffset, 10);
-//                    if (applications.size() == sizeOfApplicationsBeforeServerCommunication) {
-//                        Log.e("ServerError", "Couldn't download information from the server");
-//                    } else {
-//                        currentOffset += applications.size() - sizeOfApplicationsBeforeServerCommunication;
-//                        apRecyclerViewAdapter.addAll((ArrayList<Application>) applications.subList(sizeOfApplicationsBeforeServerCommunication, applications.size()));
-//                    }
-//                }
-//            }
-//        });
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                int lastVisiblePosition = recyclerView.getChildAdapterPosition(recyclerView.getChildAt(recyclerView.getChildCount() - 1));
+
+                // Если достигнут конец списка и есть ещё объекты для загрузки
+                if (lastVisiblePosition >= apRecyclerViewAdapter.getItemCount() - 1) {
+                    // Загрузить больше объектов с сервера
+                    int sizeOfApplicationsBeforeServerCommunication = applications.size();
+                    getInfoFromServer(currentOffset, 10);
+                    if (applications.size() == sizeOfApplicationsBeforeServerCommunication) {
+                        Log.e("ServerError", "Couldn't download information from the server");
+                    } else {
+                        currentOffset += applications.size() - sizeOfApplicationsBeforeServerCommunication;
+                        apRecyclerViewAdapter.addAll((ArrayList<Application>) applications.subList(sizeOfApplicationsBeforeServerCommunication, applications.size()));
+                    }
+                }
+            }
+        });
     }
 
     public void getInfoFromServer(int offset, int numberOfApplications) {
-        //new Thread(() -> {
+        new Thread(() -> {
         HttpURLConnection connection = null;
         try {
             Log.e("startServer", "");
             URL url = new URL(serverUtil.SERVER_URL + "get_applications/");
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
-            connection.setDoOutput(true);
+            // connection.setDoOutput(true);
             connection.setRequestProperty("Content-Type", "application/json");
             connection.setRequestProperty("Offset", offset + ""); // Java hack
             connection.setRequestProperty("NumberOfApplications", numberOfApplications + ""); // Java hack
@@ -102,6 +113,7 @@ public class ShowApplicationsActivity extends AppCompatActivity {
                     String nameOfUser = jsonApplication.getString("userName");
                     String nameOfApplication = jsonApplication.getString("applicationName");
                     String descriptionOfApplication = jsonApplication.getString("applicationDescription");
+                    Log.println(Log.INFO, "descriptionOfApplication" ,descriptionOfApplication);
 
                     Application application = new Application(nameOfUser, nameOfApplication, descriptionOfApplication);
                     applications.add(application);
@@ -113,7 +125,7 @@ public class ShowApplicationsActivity extends AppCompatActivity {
             Log.e("4cwercwerc", errorMessage);
             //Toast.makeText(this, "kek", Toast.LENGTH_LONG).show();
         } catch (RuntimeException e) {
-            Log.e("5cwercwerc", "kke");
+            Log.e("RuntimeException", e.toString());
             //Toast.makeText(this, "kek", Toast.LENGTH_LONG).show();
         } finally {
             if (connection != null) {
@@ -121,6 +133,7 @@ public class ShowApplicationsActivity extends AppCompatActivity {
             }
 
         }
-        //}).start();
+        flagGetResponse.set(1);
+        }).start();
     }
 }
