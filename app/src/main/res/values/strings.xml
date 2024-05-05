@@ -13,4 +13,16 @@
     <string name="Upadate_applications">Обновить список заявок</string>
     <string name="Show_applications">Посмотреть актуальные заявки</string>
     <string name="title_activity_show_applications">Показ заявок</string>
+    <string-array name="for_recycler_view_test">
+        <item>kek1</item>
+        <item>kek2</item>
+        <item>kek3</item>
+        <item>kek4</item>
+        <item>kek5</item>
+        <item>kek6</item>
+        <item>kek7</item>
+        <item>kek8</item>
+        <item>kek9</item>
+        <item>kek10</item>
+    </string-array>
 </resources>
