@@ -1,6 +1,5 @@
 package com.example.disabledpeople.ui;
 
-import android.app.Application;
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,11 +15,11 @@ import java.util.ArrayList;
 
 public class AP_RecyclerViewAdapter extends RecyclerView.Adapter<AP_RecyclerViewAdapter.MyViewHolder> {
     Context context;
-    ArrayList<applicationModel> applicationModels;
+    ArrayList<Application> applications;
 
-    public AP_RecyclerViewAdapter(Context context, ArrayList<applicationModel> applicationModels) {
+    public AP_RecyclerViewAdapter(Context context, ArrayList<Application> application) {
         this.context = context;
-        this.applicationModels = applicationModels;
+        this.applications = application;
     }
 
     @NonNull
@@ -33,12 +32,18 @@ public class AP_RecyclerViewAdapter extends RecyclerView.Adapter<AP_RecyclerView
 
     @Override
     public void onBindViewHolder(@NonNull AP_RecyclerViewAdapter.MyViewHolder holder, int position) {
-        holder.appName.setText(applicationModels.get(position).getApplicationName());
+        holder.appName.setText(applications.get(position).applicationName);
     }
 
     @Override
     public int getItemCount() {
-        return applicationModels.size();
+        return applications.size();
+    }
+
+    public void addAll(ArrayList<Application> applications) {
+        int currentItemCount = getItemCount();
+        this.applications.addAll(applications);
+        notifyItemRangeInserted(currentItemCount, applications.size());
     }
 
     public static class MyViewHolder extends RecyclerView.ViewHolder {

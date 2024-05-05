@@ -35,9 +35,9 @@ def save_applications():
     
     return {"message": "Received data"}
 
-@app.route('/', methods=['GET'])
+@app.route('/get_applications/', methods=['GET'])
 def get_applications():
-    return jsonify([{'userName': app.user_name, 'appName': app.app_name, 'appDesc': app.app_desc} for app in storage])
+    return jsonify([{'userName': app.user_name, 'applicationName': app.app_name, 'applicationDescription': app.app_desc} for app in storage])
 
 ip_address = "0.0.0.0"
 

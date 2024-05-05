@@ -30,8 +30,6 @@ import java.net.URL;
 
 public class ApplicationFormActivity extends AppCompatActivity {
 
-    String SERVER_URL = "http://192.168.1.86:5000/";
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -62,7 +60,7 @@ public class ApplicationFormActivity extends AppCompatActivity {
             HttpURLConnection connection = null;
             try {
                 Log.e("hhh", "kke");
-                URL url = new URL(SERVER_URL);
+                URL url = new URL(serverUtil.SERVER_URL);
                 connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("POST");
                 connection.setDoOutput(true);
