@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify
 import argparse
 
-
 class Application:
     def __init__(self, user_name, app_name, app_desc):
         self.user_name = user_name
