@@ -39,6 +39,8 @@ def save_applications():
 def get_applications():
     return jsonify([{'userName': app.user_name, 'applicationName': app.app_name, 'applicationDescription': app.app_desc} for app in storage])
 
+
+
 ip_address = "0.0.0.0"
 
 parser = argparse.ArgumentParser()
