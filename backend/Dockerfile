@@ -5,7 +5,6 @@ RUN pip install --no-cache-dir -r ./requirements.txt
 
 COPY . /app
 
-COPY entry_point.sh /app/
+# COPY entry_point.sh /app/
 RUN chmod +x /app/entry_point.sh
-ENTRYPOINT ["/app/entry_point.sh"]
-CMD ["python3", "src/server.py", "--port", "5050"]
+CMD ["/app/entry_point.sh"]
