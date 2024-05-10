@@ -1,29 +1,29 @@
 from flask import Flask, request, jsonify
 import psycopg2
 import bcrypt
-import secrets
+import random
+import string
 from server import app
 
 # Параметры подключения к БД
-DB_NAME = "users"
-DB_USER = "admin"
-DB_PASS = "admin1234"
-DB_HOST = "user_db"
-DB_PORT = "5432"
+dbname = "main"
+user = "admin"
+password = "admin1234"
+host = "postgresql"
 
 # Функция для подключения к базе данных
 def connect_db():
-    conn = psycopg2.connect(database=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
+    conn = psycopg2.connect(database=dbname, user=user, password=password, host=host)
     return conn
 
 def generate_token():
-    return secrets.token_hex(16)
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=30))
 
 @app.route('/register', methods=['POST'])
 def register_user():
     data = request.json
     
-    if not all(k in data for k in ('name', 'login', 'password', 'email', 'age')):
+    if not all(k in data for k in ('login', 'password', 'email', 'age', 'first_name', 'last_name', 'phone_number', 'telegram')):
         return jsonify({'error': 'Missing fields'}), 400
     
     hashed_password = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt())
@@ -35,13 +35,13 @@ def register_user():
         cur.execute("SELECT * FROM users WHERE login = %s OR email = %s;", (data['login'], data['email']))
         if cur.fetchone():
             return jsonify({'error': 'User already exists'}), 400
-        
-        cur.execute("INSERT INTO users (name, login, password, email, age) VALUES (%s, %s, %s, %s, %s) RETURNING id;", 
-                    (data['name'], data['login'], hashed_password, data['email'], data['age']))
+        token = generate_token()
+        cur.execute("INSERT INTO users (login, password, email, age ,first_name, last_name, phone_number, telegram, token) VALUES (%s, %d, %s, %s, %s, %s, %s, %s, %s) RETURNING id;", 
+                    (data['login'], hashed_password, data['email'], data['age'], data['first_name'], data['last_name'], data['phone_number'], data['telegram'], token))
         user_id = cur.fetchone()[0]
         conn.commit()
         
-        token = generate_token()
+        
         
         return jsonify({'message': 'User registered successfully', 'token': token}), 201
     except Exception as e:

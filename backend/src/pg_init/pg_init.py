@@ -11,12 +11,16 @@ conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host)
 cur = conn.cursor()
 cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(50) NOT NULL,
-        login VARCHAR(50) UNIQUE NOT NULL,
-        password INTEGER NOT NULL,
-        email VARCHAR(100) UNIQUE NOT NULL,
-        age INTEGER NOT NULL
+    id serial PRIMARY KEY,
+    login TEXT NOT NULL,
+    password INTEGER NOT NULL,
+    token TEXT,
+    first_name TEXT,
+    last_name TEXT,
+    age TEXT,
+    email TEXT,
+    phone_number TEXT,
+    telegram TEXT
     );
 """)
 conn.commit()

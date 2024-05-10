@@ -1,5 +1,9 @@
 from flask import Flask, request, jsonify
 import argparse
+import psycopg2
+import bcrypt
+import random
+import string
 
 class Application:
     def __init__(self, user_name, app_name, app_desc):
@@ -38,7 +42,90 @@ def save_applications():
 def get_applications():
     return jsonify([{'userName': app.user_name, 'applicationName': app.app_name, 'applicationDescription': app.app_desc} for app in storage])
 
+# Параметры подключения к БД
+dbname = "main"
+user = "admin"
+password = "admin1234"
+host = "postgresql"
 
+# Функция для подключения к базе данных
+def connect_db():
+    conn = psycopg2.connect(database=dbname, user=user, password=password, host=host)
+    return conn
+
+def generate_token():
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=30))
+
+@app.route('/register', methods=['POST'])
+def register_user():
+    data = request.json
+    
+    if not all(k in data for k in ('login', 'password', 'email', 'age', 'first_name', 'last_name', 'phone_number', 'telegram')):
+        return jsonify({'error': 'Missing fields'}), 400
+    
+    hashed_password = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt())
+
+    try:
+        conn = connect_db()
+        cur = conn.cursor()
+        
+        cur.execute("SELECT * FROM users WHERE login = %s OR email = %s;", (data['login'], data['email']))
+        if cur.fetchone():
+            return jsonify({'error': 'User already exists'}), 400
+        token = generate_token()
+        cur.execute("INSERT INTO users (login, password, email, age ,first_name, last_name, phone_number, telegram, token) VALUES (%(str)s, %(int)s, %(str)s, %(str)s, %(str)s, %(str)s, %(str)s, %(str)s, %(str)s) RETURNING id;", 
+                    (data['login'], hashed_password, data['email'], data['age'], data['first_name'], data['last_name'], data['phone_number'], data['telegram'], token))
+        user_id = cur.fetchone()[0]
+        conn.commit()
+        
+        
+        
+        return jsonify({'message': 'User registered successfully', 'token': token}), 201
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if cur is not None:
+            cur.close()
+        if conn is not None:
+            conn.close()
+
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    login_or_email = data.get('login_or_email')
+    password = data.get('password')
+
+    # Проверка на наличие данных
+    if not login_or_email or not password:
+        return jsonify({'error': 'Login/email and password are required'}), 400
+
+    try:
+        conn = connect_db()
+        cur = conn.cursor()
+        
+        # Поиск пользователя по логину или почте
+        cur.execute("SELECT id, password, token FROM users WHERE login = %s OR email = %s;", (login_or_email, login_or_email))
+        user = cur.fetchone()
+
+        if user is None:
+            return jsonify({'error': 'User not found'}), 404
+
+        user_id, hashed_password, token = user
+
+        # Проверка пароля
+        if bcrypt.checkpw(password.encode('utf-8'), hashed_password):
+            # Генерация токена/сессии для пользователя
+            return jsonify({'message': 'Login successful', 'token': token}), 200
+        else:
+            return jsonify({'error': 'Invalid password'}), 403
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
 
 ip_address = "0.0.0.0"
 

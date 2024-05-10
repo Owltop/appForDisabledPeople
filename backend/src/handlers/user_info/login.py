@@ -5,15 +5,14 @@ import secrets
 from server import app
 
 # Параметры подключения к БД
-DB_NAME = "users"
-DB_USER = "admin"
-DB_PASS = "admin1234"
-DB_HOST = "user_db"
-DB_PORT = "5432"
+dbname = "main"
+user = "admin"
+password = "admin1234"
+host = "postgresql"
 
 # Функция для подключения к базе данных
 def connect_db():
-    conn = psycopg2.connect(database=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
+    conn = psycopg2.connect(database=dbname, user=user, password=password, host=host)
     return conn
 
 def generate_token():
