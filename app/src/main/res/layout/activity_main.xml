@@ -34,31 +34,37 @@
         app:navGraph="@navigation/mobile_navigation" />
 
     <Button
-        android:id="@+id/button2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:id="@+id/reg_button"
+        android:layout_width="136dp"
+        android:layout_height="50dp"
         android:layout_marginTop="80dp"
-        android:text="Button"
+        android:onClick="registerUser"
+        android:text="@string/reg_user"
+        android:textSize="8sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.908"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/nav_host_fragment_activity_main" />
 
     <Button
-        android:id="@+id/button3"
+        android:id="@+id/auth_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
-        android:text="Button"
-        app:layout_constraintTop_toBottomOf="@+id/button2"
-        tools:layout_editor_absoluteX="288dp" />
+        android:onClick="authUser"
+        android:text="@string/auth_user"
+        android:textSize="8sp"
+        app:layout_constraintTop_toBottomOf="@+id/reg_button"
+        tools:layout_editor_absoluteX="249dp" />
 
     <Button
-        android:id="@+id/button4"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:id="@+id/update_button"
+        android:layout_width="130dp"
+        android:layout_height="53dp"
         android:layout_marginStart="28dp"
-        android:text="Button"
+        android:onClick="updateUser"
+        android:text="@string/update_user"
+        android:textSize="8sp"
         app:layout_constraintBottom_toTopOf="@+id/nav_view"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/nav_host_fragment_activity_main"

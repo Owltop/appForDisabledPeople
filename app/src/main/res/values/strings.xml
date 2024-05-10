@@ -8,11 +8,23 @@
     <string name="Task_description">Описание заявки</string>
     <string name="Warning">Заполните все поля!</string>
     <string name="Send_application">Отправить заявку</string>
+    <string name="Reg_a_user">Зарегестрироваться</string>
     <string name="Create_application">Создать заявку</string>
     <string name="Creating_application">Создание заявки</string>
     <string name="Upadate_applications">Обновить список заявок</string>
     <string name="Show_applications">Посмотреть актуальные заявки</string>
     <string name="title_activity_show_applications">Показ заявок</string>
+    <string name="reg_user">Зарегестрироваться</string>
+    <string name="auth_user">Аутентифицироваться</string>
+    <string name="update_user">Изменить информацию профиля</string>
+    <string name="reg_user_activity">Регистрация</string>
+    <string name="auth_user_activity">Аутентификация</string>
+    <string name="update_user_activity">Изменение профиля</string>
+    <string name="name">Имя</string>
+    <string name="login">Логин</string>
+    <string name="password">Пароль</string>
+    <string name="email">Почта</string>
+    <string name="age">Возраст</string>
     <string-array name="for_recycler_view_test">
         <item>kek1</item>
         <item>kek2</item>

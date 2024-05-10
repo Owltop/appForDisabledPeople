@@ -1,7 +1,5 @@
 package com.example.disabledpeople.ui;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
@@ -10,68 +8,67 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.example.disabledpeople.R;
 
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-
-public class ApplicationFormActivity extends AppCompatActivity {
-
+public class registerActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_application_form);
+        setContentView(R.layout.activity_reg);
     }
 
-    public void sendApplication(View v) {
-        ((TextView)findViewById(R.id.warningText)).setVisibility(View.INVISIBLE);
+    public void sendUserRegistrationInfo(View v) {
+        ((TextView)findViewById(R.id.warningTextReg)).setVisibility(View.INVISIBLE);
 
-        String user_name = ((TextView)findViewById(R.id.name_application_form)).getText().toString();
-        String app_name = ((TextView)findViewById(R.id.app_name)).getText().toString();
-        String app_desc = ((TextView)findViewById(R.id.app_info)).getText().toString();
-        if (user_name.isEmpty() || app_name.isEmpty() || app_desc.isEmpty()) {
-            ((TextView)findViewById(R.id.warningText)).setVisibility(View.VISIBLE);
+        String name = ((TextView)findViewById(R.id.name_reg)).getText().toString();
+        String login = ((TextView)findViewById(R.id.login_reg)).getText().toString();
+        String password = ((TextView)findViewById(R.id.password_reg)).getText().toString();
+        String email = ((TextView)findViewById(R.id.email_reg)).getText().toString();
+        String age = ((TextView)findViewById(R.id.age_reg)).getText().toString();
+        if (name.isEmpty() || login.isEmpty() || password.isEmpty() || email.isEmpty() || age.isEmpty()) {
+            ((TextView)findViewById(R.id.warningTextReg)).setVisibility(View.VISIBLE);
         } else {
             InputMethodManager imm = (InputMethodManager) this.getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
 
-            // TODO: взаимодействие с сервером
-            sendInfoToServer(user_name, app_name, app_desc);
+            sendRegInfoToServer(name, login, password, email, age);
 
             Toast.makeText(this, "Заявка успешно отправлена", Toast.LENGTH_LONG).show();
         }
     }
 
-    public void sendInfoToServer(String user_name, String app_name, String app_desc) {
+    public void sendRegInfoToServer(String name, String login, String password, String email, String age) {
         new Thread(() -> {
             HttpURLConnection connection = null;
             try {
-                Log.e("hhh", "kke");
-                URL url = new URL(serverUtil.SERVER_URL);
+                URL url = new URL(serverUtil.SERVER_URL + "register/");
                 connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("POST");
                 connection.setDoOutput(true);
                 connection.setRequestProperty("Content-Type", "application/json");
-                connection.setRequestProperty("UserName", user_name);
-                connection.setRequestProperty("AppName", app_name);
-                connection.setRequestProperty("AppDesc", app_desc);
+                connection.setRequestProperty("name", name);
+                connection.setRequestProperty("login", login);
+                connection.setRequestProperty("password", password);
+                connection.setRequestProperty("email", email);
+                connection.setRequestProperty("age", age);
 
-                Log.e("2cwercwerc", "kke");
                 OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
                 writer.write(1);
                 writer.flush();
 
-                Log.e("6cwercwerc", "kke");
                 int responseCode = connection.getResponseCode();
                 if (responseCode == HttpURLConnection.HTTP_OK) {
-                    //Log.e("sdcscsc", "kke");
                     Toast.makeText(this, "Заявка успешно отправлена", Toast.LENGTH_LONG).show();
                 } else {
-                    Toast.makeText(this, "kek", Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "Something wrong", Toast.LENGTH_LONG).show();
                 }
             } catch (SocketTimeoutException e) {
                 Log.e("2cwercwerc", serverUtil.SERVER_URL);

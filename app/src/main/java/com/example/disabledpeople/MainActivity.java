@@ -1,7 +1,19 @@
 package com.example.disabledpeople;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
 
+import com.example.disabledpeople.ui.ApplicationFormActivity;
+import com.example.disabledpeople.ui.ShowApplicationsActivity;
+import com.example.disabledpeople.ui.authActivity;
+import com.example.disabledpeople.ui.registerActivity;
+import com.example.disabledpeople.ui.updateActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -32,6 +44,21 @@ public class MainActivity extends AppCompatActivity {
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_activity_main);
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(binding.navView, navController);
+    }
+
+    public void registerUser(View v) {
+        Intent intent = new Intent(this, registerActivity.class);
+        startActivity(intent);
+    }
+
+    public void authUser(View v) {
+        Intent intent = new Intent(this, authActivity.class);
+        startActivity(intent);
+    }
+
+    public void updateUser(View v) {
+        Intent intent = new Intent(this, updateActivity.class);
+        startActivity(intent);
     }
 
 }

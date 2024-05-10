@@ -27,6 +27,21 @@
             android:label="@string/Creating_application"
             android:parentActivityName=".MainActivity" />
         <activity
+            android:name=".ui.registerActivity"
+            android:exported="false"
+            android:label="@string/reg_user_activity"
+            android:parentActivityName=".MainActivity"/>
+        <activity
+            android:name=".ui.authActivity"
+            android:exported="false"
+            android:label="@string/auth_user_activity"
+            android:parentActivityName=".MainActivity"/>
+        <activity
+            android:name=".ui.updateActivity"
+            android:exported="false"
+            android:label="@string/update_user_activity"
+            android:parentActivityName=".MainActivity"/>
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name">
