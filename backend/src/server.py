@@ -1,3 +1,4 @@
+import bcrypt
 from flask import Flask, request, jsonify
 import argparse
 
@@ -15,10 +16,15 @@ class Application:
 
     def __hash__(self):
         return hash((self.user_name, self.app_name, self.app_desc))
+
+# def register_routes(app):
+#     import handlers.user_info.registration as registration
+#     app.register_blueprint(registration.routes)
         
 
 storage = set()
 app = Flask(__name__)
+# register_routes(app)
 
 @app.route('/', methods=['POST'])
 def save_applications():
@@ -37,6 +43,16 @@ def save_applications():
 @app.route('/get_applications/', methods=['GET'])
 def get_applications():
     return jsonify([{'userName': app.user_name, 'applicationName': app.app_name, 'applicationDescription': app.app_desc} for app in storage])
+
+@app.route('/register/', methods=['POST'])
+def register_user():
+    data = request.json
+    
+    if not all(k in data for k in ('name', 'login', 'password', 'email', 'age')):
+        return jsonify({'error': 'Missing fields'}), 400
+    
+    hashed_password = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt())
+    return jsonify({'message': 'User registered successfully', 'token': 'temporary_token'}), 201
 
 
 

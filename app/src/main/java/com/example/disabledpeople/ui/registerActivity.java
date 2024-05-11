@@ -41,7 +41,7 @@ public class registerActivity extends AppCompatActivity {
 
             sendRegInfoToServer(name, login, password, email, age);
 
-            Toast.makeText(this, "Заявка успешно отправлена", Toast.LENGTH_LONG).show();
+            // Toast.makeText(this, "Заявка успешно отправлена", Toast.LENGTH_LONG).show();
         }
     }
 

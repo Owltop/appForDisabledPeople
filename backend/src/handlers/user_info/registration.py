@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Blueprint, Flask, request, jsonify
 import psycopg2
 import bcrypt
 import secrets
@@ -19,6 +19,8 @@ def connect_db():
 def generate_token():
     return secrets.token_hex(16)
 
+# routes = Blueprint('registration', __name__)
+
 @app.route('/register', methods=['POST'])
 def register_user():
     data = request.json
@@ -27,6 +29,7 @@ def register_user():
         return jsonify({'error': 'Missing fields'}), 400
     
     hashed_password = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt())
+    return jsonify({'message': 'User registered successfully', 'token': 'temporary_token'}), 201
 
     try:
         conn = connect_db()
