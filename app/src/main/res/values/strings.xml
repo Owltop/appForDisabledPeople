@@ -18,7 +18,7 @@
     <string name="title_activity_show_applications">Показ заявок</string>
     <string name="reg_user">Зарегестрироваться</string>
     <string name="auth_user">Аутентифицироваться</string>
-    <string name="update_user">Изменить информацию профиля</string>
+    <string name="update_user">Обновить профиль</string>
     <string name="reg_user_activity">Регистрация</string>
     <string name="auth_user_activity">Аутентификация</string>
     <string name="update_user_activity">Изменение профиля</string>

@@ -1,6 +1,7 @@
 package com.example.disabledpeople.ui;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -12,11 +13,23 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.disabledpeople.R;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.util.Map;
+import java.util.logging.Logger;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class registerActivity extends AppCompatActivity {
     @Override
@@ -40,12 +53,10 @@ public class registerActivity extends AppCompatActivity {
             imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
 
             sendRegInfoToServer(name, login, password, email, age);
-
-            // Toast.makeText(this, "Заявка успешно отправлена", Toast.LENGTH_LONG).show();
         }
     }
 
-    public void sendRegInfoToServer(String name, String login, String password, String email, String age) {
+    public void sendRegInfoToServer(String name, String login, String password, String email, String age) { // 0 - OK,
         new Thread(() -> {
             HttpURLConnection connection = null;
             try {
@@ -54,32 +65,63 @@ public class registerActivity extends AppCompatActivity {
                 connection.setRequestMethod("POST");
                 connection.setDoOutput(true);
                 connection.setRequestProperty("Content-Type", "application/json");
-                connection.setRequestProperty("name", name);
-                connection.setRequestProperty("login", login);
-                connection.setRequestProperty("password", password);
-                connection.setRequestProperty("email", email);
-                connection.setRequestProperty("age", age);
+
+                String data = "{ \"name\": \"" + name + "\", \"login\": \"" + login + "\", \"password\": \"" + password + "\", \"email\": \"" + email + "\", \"age\": \"" + age + "\" }";
 
                 OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
-                writer.write(1);
+                writer.write(data);
                 writer.flush();
 
                 int responseCode = connection.getResponseCode();
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    Toast.makeText(this, "Заявка успешно отправлена", Toast.LENGTH_LONG).show();
-                } else {
-                    Toast.makeText(this, "Something wrong", Toast.LENGTH_LONG).show();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line).append("\n");
                 }
-            } catch (SocketTimeoutException e) {
-                Log.e("2cwercwerc", serverUtil.SERVER_URL);
-                //Toast.makeText(this, "kek", Toast.LENGTH_LONG).show();
+                String response = sb.toString();
+
+                JSONObject json = new JSONObject(response);
+                String token = json.getString("token");
+                SharedPreferences sharedPref = getSharedPreferences("my_preferences", Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.putString("token", token);
+                editor.apply();
+
+                if (responseCode == HttpURLConnection.HTTP_OK || responseCode == HttpURLConnection.HTTP_CREATED) {
+                    runOnUiThread(new Runnable() {
+                        public void run() {
+                            Toast.makeText(getApplicationContext(), "Вы успешно зарегестрировались", Toast.LENGTH_LONG).show();
+                        }
+                    });
+                } else {
+                    Toast.makeText(this, "Something wrong " + responseCode, Toast.LENGTH_LONG).show();
+                }
+            }  catch (SocketTimeoutException e) {
+                Log.e("SocketTimeoutException", serverUtil.SERVER_URL);
+                runOnUiThread(new Runnable() {
+                    public void run() {
+                        Toast.makeText(getApplicationContext(), "Server error", Toast.LENGTH_LONG).show();
+                    }
+                });
             } catch (IOException e) {
                 String errorMessage = "An error occurred: " + e.getMessage();
-                Log.e("4cwercwerc", errorMessage + serverUtil.SERVER_URL);
-                //Toast.makeText(this, "kek", Toast.LENGTH_LONG).show();
+                Log.e("IOException", errorMessage + serverUtil.SERVER_URL);
+                runOnUiThread(new Runnable() {
+                    public void run() {
+                        Toast.makeText(getApplicationContext(),  errorMessage, Toast.LENGTH_LONG).show();
+                    }
+                });
             } catch (RuntimeException e) {
-                Log.e("5cwercwerc", "kke");
-                //Toast.makeText(this, "kek", Toast.LENGTH_LONG).show();
+                Log.e("RuntimeException", "RuntimeException");
+                runOnUiThread(new Runnable() {
+                    public void run() {
+                        Toast.makeText(getApplicationContext(), "RuntimeException", Toast.LENGTH_LONG).show();
+                    }
+                });
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
             } finally {
                 if (connection != null) {
                     connection.disconnect();
