@@ -60,7 +60,7 @@ public class registerActivity extends AppCompatActivity {
         new Thread(() -> {
             HttpURLConnection connection = null;
             try {
-                URL url = new URL(serverUtil.SERVER_URL + "register/");
+                URL url = new URL(serverUtil.SERVER_URL + "register");
                 connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("POST");
                 connection.setDoOutput(true);
