@@ -1,10 +1,9 @@
-import bcrypt
 from flask import Flask, request, jsonify
 import argparse
 import psycopg2
-import bcrypt
 import random
 import string
+import hashlib
 
 class Application:
     def __init__(self, user_name, app_name, app_desc):
@@ -53,21 +52,20 @@ dbname = "main"
 user = "admin"
 password = "admin1234"
 host = "postgresql"
-@app.route('/register/', methods=['POST'])
-def register_user():
-    data = request.json
-    
-    if not all(k in data for k in ('name', 'login', 'password', 'email', 'age')):
-        return jsonify({'error': 'Missing fields'}), 400
-    
-    hashed_password = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt())
-    return jsonify({'message': 'User registered successfully', 'token': 'temporary_token'}), 201
 
 
 # Функция для подключения к базе данных
 def connect_db():
     conn = psycopg2.connect(database=dbname, user=user, password=password, host=host)
     return conn
+
+def hash_password(password):
+    password_bytes = password.encode('utf-8')
+    sha256_hash = hashlib.sha256()
+    sha256_hash.update(password_bytes)
+    hashed_password = sha256_hash.hexdigest()
+
+    return str(hashed_password)
 
 def generate_token():
     return ''.join(random.choices(string.ascii_letters + string.digits, k=30))
@@ -76,10 +74,10 @@ def generate_token():
 def register_user():
     data = request.json
     
-    if not all(k in data for k in ('login', 'password', 'email', 'age', 'first_name', 'last_name', 'phone_number', 'telegram')):
+    if not all(k in data for k in ('name', 'login', 'password', 'email', 'age')):
         return jsonify({'error': 'Missing fields'}), 400
     
-    hashed_password = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt())
+    hashed_password = hash_password(data['password'])
 
     try:
         conn = connect_db()
@@ -89,8 +87,7 @@ def register_user():
         if cur.fetchone():
             return jsonify({'error': 'User already exists'}), 400
         token = generate_token()
-        cur.execute("INSERT INTO users (login, password, email, age ,first_name, last_name, phone_number, telegram, token) VALUES (%(str)s, %(int)s, %(str)s, %(str)s, %(str)s, %(str)s, %(str)s, %(str)s, %(str)s) RETURNING id;", 
-                    (data['login'], hashed_password, data['email'], data['age'], data['first_name'], data['last_name'], data['phone_number'], data['telegram'], token))
+        cur.execute(f"INSERT INTO users (name, login, password, email, age, token) VALUES ('{data['name']}', '{data['login']}', '{hashed_password}', '{data['email']}', '{data['age']}', '{token}') RETURNING id;")
         user_id = cur.fetchone()[0]
         conn.commit()
         
@@ -121,7 +118,6 @@ def login():
         conn = connect_db()
         cur = conn.cursor()
         
-        # Поиск пользователя по логину или почте
         cur.execute("SELECT id, password, token FROM users WHERE login = %s OR email = %s;", (login_or_email, login_or_email))
         user = cur.fetchone()
 
@@ -131,7 +127,7 @@ def login():
         user_id, hashed_password, token = user
 
         # Проверка пароля
-        if bcrypt.checkpw(password.encode('utf-8'), hashed_password):
+        if hash_password(password) == hashed_password:
             # Генерация токена/сессии для пользователя
             return jsonify({'message': 'Login successful', 'token': token}), 200
         else:

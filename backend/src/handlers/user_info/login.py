@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify
 import psycopg2
-import bcrypt
 import secrets
 from server import app
 

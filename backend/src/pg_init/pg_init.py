@@ -13,14 +13,11 @@ cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
     id serial PRIMARY KEY,
     login TEXT NOT NULL,
-    password INTEGER NOT NULL,
+    password TEXT NOT NULL,
     token TEXT,
-    first_name TEXT,
-    last_name TEXT,
+    name TEXT,
     age TEXT,
-    email TEXT,
-    phone_number TEXT,
-    telegram TEXT
+    email TEXT
     );
 """)
 conn.commit()
