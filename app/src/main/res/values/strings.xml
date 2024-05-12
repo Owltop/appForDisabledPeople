@@ -9,6 +9,8 @@
     <string name="Warning">Заполните все поля!</string>
     <string name="Send_application">Отправить заявку</string>
     <string name="Reg_a_user">Зарегестрироваться</string>
+    <string name="Update_a_user">Обновить профиль</string>
+    <string name="Auth_a_user">Войти</string>
     <string name="Create_application">Создать заявку</string>
     <string name="Creating_application">Создание заявки</string>
     <string name="Upadate_applications">Обновить список заявок</string>

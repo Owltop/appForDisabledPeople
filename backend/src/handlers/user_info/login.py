@@ -22,7 +22,7 @@ def generate_token():
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
-    login_or_email = data.get('login_or_email')
+    login_or_email = data.get('login')
     password = data.get('password')
 
     # Проверка на наличие данных
