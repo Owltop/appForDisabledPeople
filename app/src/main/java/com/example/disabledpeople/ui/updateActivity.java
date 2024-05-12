@@ -56,7 +56,7 @@ public class updateActivity extends AppCompatActivity {
         new Thread(() -> {
             HttpURLConnection connection = null;
             try {
-                URL url = new URL(serverUtil.SERVER_URL + "update/");
+                URL url = new URL(serverUtil.SERVER_URL + "update");
                 connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("POST");
                 connection.setDoOutput(true);

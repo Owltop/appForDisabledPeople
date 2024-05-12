@@ -50,7 +50,7 @@ public class authActivity extends AppCompatActivity {
         new Thread(() -> {
             HttpURLConnection connection = null;
             try {
-                URL url = new URL(serverUtil.SERVER_URL + "login/");
+                URL url = new URL(serverUtil.SERVER_URL + "login");
                 connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("POST");
                 connection.setDoOutput(true);

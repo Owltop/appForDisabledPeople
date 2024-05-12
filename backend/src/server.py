@@ -103,14 +103,6 @@ def register_user():
         if conn is not None:
             conn.close()
 
-@app.route('/login/', methods=['POST'])
-def login():
-    data = request.json
-    login_or_email = data.get('login_or_email')
-    password = data.get('password')
-    return jsonify({'message': 'Login successful', 'token': 'temporary_token'}), 200
-
-
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
