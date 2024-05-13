@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.example.disabledpeople.R;
 
@@ -32,17 +33,15 @@ public class ShowApplicationsActivity extends AppCompatActivity {
     AtomicInteger flagGetResponse = new AtomicInteger(0);
 
     private void SetUpApplicationModel() throws InterruptedException {
-//        while (flag.incrementAndGet() != 1) { // Тут хрень написана, не спасает от того, что сразу несколько запросов могут быть посланы на сервер
-//            flag.decrementAndGet();
-//        }
-        // Communicating with server
+        reliableGetApplicationsFromServer(currentOffset, 20);
+    }
+
+    private void reliableGetApplicationsFromServer(int offset, int numberOfApplications) throws InterruptedException {
         flagGetResponse.set(0);
-        getInfoFromServer(currentOffset, 20);
+        getInfoFromServer(offset, numberOfApplications);
         while (flagGetResponse.get() != 1) {
             // spinning
         }
-        //flag.decrementAndGet();
-
     }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +54,13 @@ public class ShowApplicationsActivity extends AppCompatActivity {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+        if (applications.isEmpty()) {
+            runOnUiThread(new Runnable() {
+                public void run() {
+                    Toast.makeText(getApplicationContext(), "Заявок нет", Toast.LENGTH_LONG).show();
+                }
+            });
+        }
 
         AP_RecyclerViewAdapter apRecyclerViewAdapter = new AP_RecyclerViewAdapter(this, applications);
 
@@ -65,13 +71,20 @@ public class ShowApplicationsActivity extends AppCompatActivity {
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 int lastVisiblePosition = recyclerView.getChildAdapterPosition(recyclerView.getChildAt(recyclerView.getChildCount() - 1));
 
-                // Если достигнут конец списка и есть ещё объекты для загрузки
                 if (lastVisiblePosition >= apRecyclerViewAdapter.getItemCount() - 1) {
-                    // Загрузить больше объектов с сервера
                     int sizeOfApplicationsBeforeServerCommunication = applications.size();
-                    getInfoFromServer(currentOffset, 10);
+                    try {
+                        reliableGetApplicationsFromServer(currentOffset, 10);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
                     if (applications.size() == sizeOfApplicationsBeforeServerCommunication) {
-                        Log.e("ServerError", "Couldn't download information from the server");
+                        Log.e("ServerError", "Couldn't download more information from the server");
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                Toast.makeText(getApplicationContext(), "Загружены все заявки", Toast.LENGTH_LONG).show();
+                            }
+                        });
                     } else {
                         currentOffset += applications.size() - sizeOfApplicationsBeforeServerCommunication;
                         apRecyclerViewAdapter.addAll((ArrayList<Application>) applications.subList(sizeOfApplicationsBeforeServerCommunication, applications.size()));
@@ -89,7 +102,6 @@ public class ShowApplicationsActivity extends AppCompatActivity {
             URL url = new URL(serverUtil.SERVER_URL + "get_applications/");
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
-            // connection.setDoOutput(true);
             connection.setRequestProperty("Content-Type", "application/json");
             connection.setRequestProperty("Offset", offset + ""); // Java hack
             connection.setRequestProperty("NumberOfApplications", numberOfApplications + ""); // Java hack
@@ -120,13 +132,27 @@ public class ShowApplicationsActivity extends AppCompatActivity {
                 }
             }
         } catch (ProtocolException | MalformedURLException | JSONException ignored) {
+            Log.e("ProtocolException | MalformedURLException | JSONException ignored", "Exception");
+            runOnUiThread(new Runnable() {
+                public void run() {
+                    Toast.makeText(getApplicationContext(), "Internal Error", Toast.LENGTH_LONG).show();
+                }
+            });
         } catch (IOException e) {
             String errorMessage = "An error occurred: " + e.getMessage();
-            Log.e("4cwercwerc", errorMessage);
-            //Toast.makeText(this, "kek", Toast.LENGTH_LONG).show();
+            Log.e("IOException", errorMessage + serverUtil.SERVER_URL);
+            runOnUiThread(new Runnable() {
+                public void run() {
+                    Toast.makeText(getApplicationContext(),  errorMessage, Toast.LENGTH_LONG).show();
+                }
+            });
         } catch (RuntimeException e) {
-            Log.e("RuntimeException", e.toString());
-            //Toast.makeText(this, "kek", Toast.LENGTH_LONG).show();
+            Log.e("RuntimeException", "RuntimeException");
+            runOnUiThread(new Runnable() {
+                public void run() {
+                    Toast.makeText(getApplicationContext(), "RuntimeException", Toast.LENGTH_LONG).show();
+                }
+            });
         } finally {
             if (connection != null) {
                 connection.disconnect();
