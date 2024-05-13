@@ -17,8 +17,23 @@ cur.execute("""
     token TEXT,
     name TEXT,
     age TEXT,
-    email TEXT
+    email TEXT,
+    account_type TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS requests (
+    id serial PRIMARY KEY,
+    author TEXT NOT NULL,
+    executor TEXT,
+    latitude TEXT,
+    longitude TEXT,
+    region TEXT,
+    description TEXT,
+    status TEXT,
+    created_at TEXT,
+    finished_at TEXT
+    );       
+    
 """)
 conn.commit()
 cur.close()

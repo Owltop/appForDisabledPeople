@@ -4,6 +4,7 @@ import psycopg2
 import random
 import string
 import hashlib
+from datetime import datetime
 
 class Application:
     def __init__(self, user_name, app_name, app_desc):
@@ -74,9 +75,12 @@ def generate_token():
 def register_user():
     data = request.json
     
-    if not all(k in data for k in ('name', 'login', 'password', 'email', 'age')):
+    if not all(k in data for k in ('name', 'login', 'password', 'email', 'age', 'account_type')):
         return jsonify({'error': 'Missing fields'}), 400
     
+    if data['account_type'] != 'volunteer' and data['account_type'] != 'customer':
+        return jsonify({'error': 'Account type has to be either volunteer or customer'}), 400
+
     hashed_password = hash_password(data['password'])
 
     try:
@@ -87,7 +91,7 @@ def register_user():
         if cur.fetchone():
             return jsonify({'error': 'User already exists'}), 400
         token = generate_token()
-        cur.execute(f"INSERT INTO users (name, login, password, email, age, token) VALUES ('{data['name']}', '{data['login']}', '{hashed_password}', '{data['email']}', '{data['age']}', '{token}') RETURNING id;")
+        cur.execute(f"INSERT INTO users (name, login, password, email, age, account_type, token) VALUES ('{data['name']}', '{data['login']}', '{hashed_password}', '{data['email']}', '{data['age']}', '{data['account_type']}', '{token}') RETURNING id;")
         user_id = cur.fetchone()[0]
         conn.commit()
         
@@ -118,18 +122,18 @@ def login():
         conn = connect_db()
         cur = conn.cursor()
         
-        cur.execute("SELECT id, password, token FROM users WHERE login = %s OR email = %s;", (login_or_email, login_or_email))
+        cur.execute("SELECT id, password, token, account_type FROM users WHERE login = %s OR email = %s;", (login_or_email, login_or_email))
         user = cur.fetchone()
 
         if user is None:
             return jsonify({'error': 'User not found'}), 404
 
-        user_id, hashed_password, token = user
+        user_id, hashed_password, token, account_type = user
 
         # Проверка пароля
         if hash_password(password) == hashed_password:
             # Генерация токена/сессии для пользователя
-            return jsonify({'message': 'Login successful', 'token': token}), 200
+            return jsonify({'message': 'Login successful', 'token': token, 'account_type': account_type}), 200
         else:
             return jsonify({'error': 'Invalid password'}), 403
 
@@ -138,6 +142,227 @@ def login():
     finally:
         cur.close()
         conn.close()
+
+
+@app.route('/accept_request', methods=['POST'])
+def accept_request():
+    data = request.json
+    
+    if not all(k in data for k in ('executor', 'region', 'account_type', 'token')):
+        return jsonify({'error': 'Missing fields'}), 400
+    
+    if data['account_type'] != 'volunteer':
+        return jsonify({'error': 'Account type has to be volunteer to accept requests'}), 400
+    status = 'assigned'
+    try:
+        conn = connect_db()
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT token FROM users WHERE login = %s", (data['executor'],))
+                real_token = cur.fetchone()
+                if real_token is None or real_token[0] != data['token']:
+                    return jsonify({'error': 'Unauthorized'}), 401
+
+                cur.execute("""
+                    SELECT id FROM requests
+                    WHERE executor IS NULL AND region = %s
+                    ORDER BY created_at ASC
+                    FOR UPDATE SKIP LOCKED
+                    LIMIT 1;
+                """, (data['region'],))
+                picked_request = cur.fetchone()
+                if picked_request is None:
+                    return jsonify({'error': 'No requests available'}), 404
+
+                request_id = picked_request[0]
+                cur.execute("""
+                    UPDATE requests
+                    SET executor = %s,
+                    status = %s
+                    WHERE id = %s;
+                """, (data['executor'], status, request_id))
+                
+                conn.commit()
+
+        return jsonify({'message': 'Request accepted successfully', 'request_id': request_id}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if conn:
+            conn.close()
+
+
+@app.route('/finish_request', methods=['POST'])
+def finish_request():
+    data = request.json
+
+    if not all(k in data for k in ('executor', 'request_id', 'account_type', 'token')):
+        return jsonify({'error': 'Missing fields'}), 400
+
+    if data['account_type'] != 'volunteer':
+        return jsonify({'error': 'Account type has to be volunteer to finish requests'}), 400
+
+    try:
+        conn = connect_db()
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT token FROM users WHERE login = %s", (data['executor'],))
+                real_token = cur.fetchone()
+                if real_token is None or real_token[0] != data['token']:
+                    return jsonify({'error': 'Unauthorized'}), 401
+
+                now = datetime.now()
+                date_now = now.strftime('%Y-%m-%d %H:%M:%S')
+                cur.execute("""
+                    UPDATE requests
+                    SET status = 'finish', finished_at = %s
+                    WHERE id = %s AND executor = %s;
+                """, (date_now, data['request_id'], data['executor']))
+                
+                if cur.rowcount == 0:
+                    return jsonify({'error': 'No matches found or you are not the executor of this request'}), 404
+
+                conn.commit()
+
+        return jsonify({'message': 'Request finished successfully', 'request_id': data['request_id'], 'finished_at': date_now}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if conn:
+            conn.close()
+
+
+@app.route('/get_active_requests', methods=['GET'])
+def get_active_requests():
+    volunteer = request.args.get('volunteer')
+    token = request.args.get('token')
+    region = request.args.get('region')
+
+    if not volunteer or not token or not region:
+        return jsonify({'error': 'Missing parameters'}), 400
+
+    try:
+        conn = connect_db()
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT token, account_type FROM users WHERE login = %s", (volunteer,))
+                user_data = cur.fetchone()
+                if not user_data or user_data[0] != token or user_data[1] != 'volunteer':
+                    return jsonify({'error': 'Unauthorized or incorrect account type'}), 401
+
+                cur.execute("""
+                    SELECT id, author, description, latitude, longitude, region, created_at
+                    FROM requests
+                    WHERE executor IS NULL AND region = %s
+                    FOR UPDATE SKIP LOCKED;
+                """, (region,))
+                requests = cur.fetchall()
+
+                results = [
+                    {
+                        'id': req[0],
+                        'author': req[1],
+                        'description': req[2],
+                        'latitude': req[3],
+                        'longitude': req[4],
+                        'region': req[5],
+                        'created_at': req[6]
+                    }
+                    for req in requests
+                ]
+
+                return jsonify({'active_requests': results}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if conn:
+            conn.close()
+
+
+@app.route('/get_customer_requests', methods=['GET'])
+def get_customer_requests():
+    customer = request.args.get('customer')
+    token = request.args.get('token')
+
+    if not customer or not token:
+        return jsonify({'error': 'Missing parameters'}), 400
+
+    try:
+        conn = connect_db()
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT token FROM users WHERE login = %s", (customer,))
+                real_token = cur.fetchone()
+                if real_token is None or real_token[0] != token:
+                    return jsonify({'error': 'Unauthorized'}), 401
+
+                cur.execute("""
+                    SELECT id, author, description, latitude, longitude, region, created_at, executor, status, finished_at
+                    FROM requests
+                    WHERE author = %s;
+                """, (customer,))
+                requests = cur.fetchall()
+
+                results = [
+                    {
+                        'id': request[0],
+                        'author': request[1],
+                        'description': request[2],
+                        'latitude': request[3],
+                        'longitude': request[4],
+                        'region': request[5],
+                        'created_at': request[6],
+                        'executor': request[7],
+                        'status': request[8],
+                        'finished_at': request[9]
+                    }
+                    for request in requests
+                ]
+
+                return jsonify({'requests': results}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if conn:
+            conn.close()
+
+
+@app.route('/create_request', methods=['POST'])
+def create_request():
+    data = request.json
+    
+    if not all(k in data for k in ('author', 'description', 'latitude', 'longitude', 'region', 'account_type', 'token')):
+        return jsonify({'error': 'Missing fields'}), 400
+
+    if data['account_type'] != 'customer':
+        return jsonify({'error': 'Account type has to be customer to create requests'}), 400
+
+    now = datetime.now()
+    date_now = now.strftime('%Y-%m-%d %H:%M:%S')
+    status = 'created'
+    try:
+        conn = connect_db()
+        cur = conn.cursor()
+        
+        cur.execute("SELECT token FROM users WHERE login = %s", (data['author'],))
+        real_token = cur.fetchone()[0]
+        if real_token != data['token']:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        cur.execute("INSERT INTO requests (author, description, latitude, longitude, region, created_at, status) VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id;", (data['author'], data['description'], data['latitude'], data['longitude'], data['region'], date_now, status))
+        request_id = cur.fetchone()[0]
+        conn.commit()
+        return jsonify({'message': 'Request was created successfully', 'created_at': date_now, 'request_id': request_id}), 201
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+  
+
 
 ip_address = "0.0.0.0"
 
