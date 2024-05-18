@@ -22,7 +22,7 @@
 
 
 Создание заявки
-`curl -d '{"author":"aaroy",  "description":"test", "latitude":"14.58", "longitude":"11.44", "region":"Moscow", "account_type":"customer"}' -H "Content-Type: application/json" -X POST http://localhost:5050/create_request`
+`curl -d '{"author":"aaroy",  "description":"test", "latitude":"14.58", "longitude":"11.44", "region":"Moscow", "account_type":"customer", "token": "OOApw6wjZ94muzFgzLx5c6h5mxW80T"}' -H "Content-Type: application/json" -X POST http://localhost:5050/create_request`
 
 
 Принятие заявки в работу

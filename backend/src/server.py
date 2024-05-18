@@ -1,10 +1,13 @@
+import json
 from flask import Flask, request, jsonify
 import argparse
 import psycopg2
 import random
 import string
 import hashlib
+import redis
 from datetime import datetime
+
 
 class Application:
     def __init__(self, user_name, app_name, app_desc):
@@ -29,6 +32,8 @@ class Application:
 storage = set()
 app = Flask(__name__)
 # register_routes(app)
+
+r = redis.Redis(host='redis', port=6379, decode_responses=True)
 
 @app.route('/', methods=['POST'])
 def save_applications():
@@ -107,6 +112,52 @@ def register_user():
         if conn is not None:
             conn.close()
 
+@app.route('/update', methods=['POST'])
+def update_user():
+    data = request.json
+    
+    if not all(k in data for k in ('name', 'login', 'password', 'email', 'age', 'account_type', 'token')):
+        return jsonify({'error': 'Missing fields'}), 400
+    if data['account_type'] != 'volunteer' and data['account_type'] != 'customer':
+        return jsonify({'error': 'Account type has to be either volunteer or customer'}), 400
+
+    try:
+        conn = connect_db()
+        cur = conn.cursor()
+        
+        cur.execute("SELECT token FROM users WHERE login = %s OR email = %s LIMIT 1;", (data['login'], data['email']))
+        real_token = cur.fetchone()
+        if real_token is None:
+            return jsonify({'error': 'No such user'}), 404
+        print(len(real_token))
+        if real_token[0] != data['token']:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        params = [data.get(key) for key in ['name', 'login', 'email', 'age','account_type']]
+        params.append(data.get('login'))
+        cur.execute("""
+                    UPDATE users
+                    SET name = %s,
+                    login = %s,
+                    email = %s,
+                    age = %s,
+                    account_type = %s
+                    WHERE login = %s;
+                """, (params))
+        conn.commit()
+        
+        
+        
+        return jsonify({'message': 'User info was updated successfully'}), 200
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if cur is not None:
+            cur.close()
+        if conn is not None:
+            conn.close()
+
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
@@ -153,6 +204,7 @@ def accept_request():
     if data['account_type'] != 'volunteer':
         return jsonify({'error': 'Account type has to be volunteer to accept requests'}), 400
     status = 'assigned'
+
     try:
         conn = connect_db()
         with conn:
@@ -238,7 +290,13 @@ def get_active_requests():
     region = request.args.get('region')
 
     if not volunteer or not token or not region:
-        return jsonify({'error': 'Missing parameters'}), 400
+        return jsonify({'error': 'Missing parameters'}), 400     
+
+    redis_key = f"status:created"
+    
+    if r.exists(redis_key):
+        results = r.get(redis_key)
+        return jsonify({'active_requests': json.loads(results)}), 200
 
     try:
         conn = connect_db()
@@ -269,7 +327,7 @@ def get_active_requests():
                     }
                     for req in requests
                 ]
-
+                r.set(redis_key, json.dumps(results))
                 return jsonify({'active_requests': results}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -286,6 +344,11 @@ def get_customer_requests():
     if not customer or not token:
         return jsonify({'error': 'Missing parameters'}), 400
 
+    redis_key = f"customer:{customer}"
+
+    if r.exists(redis_key):
+        results = r.get(redis_key)
+        return jsonify({'active_requests': json.loads(results)}), 200
     try:
         conn = connect_db()
         with conn:
@@ -317,7 +380,7 @@ def get_customer_requests():
                     }
                     for request in requests
                 ]
-
+                r.set(redis_key, json.dumps(results))
                 return jsonify({'requests': results}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -335,6 +398,16 @@ def create_request():
 
     if data['account_type'] != 'customer':
         return jsonify({'error': 'Account type has to be customer to create requests'}), 400
+
+    redis_key = f"customer:{data['author']}"
+
+    if r.exists(redis_key):
+        results = r.delete(redis_key)
+
+    redis_reg = f"status:created"
+
+    if r.exists(redis_reg):
+        r.delete(redis_reg)
 
     now = datetime.now()
     date_now = now.strftime('%Y-%m-%d %H:%M:%S')
