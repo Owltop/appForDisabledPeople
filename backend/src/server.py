@@ -6,6 +6,7 @@ import random
 import string
 import hashlib
 import redis
+import pika
 from datetime import datetime
 
 
@@ -275,6 +276,19 @@ def finish_request():
                     return jsonify({'error': 'No matches found or you are not the executor of this request'}), 404
 
                 conn.commit()
+
+        try:
+            connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
+            channel = connection.channel()
+
+            channel.queue_declare(queue='user_events')
+            message = json.dumps({'login': data['executor'], 'token': data['token']})
+            
+            channel.basic_publish(exchange='', routing_key='user_events', body=message)
+            
+            connection.close()
+        except Exception as e:
+            print("Stat service doesn't responding") 
 
         return jsonify({'message': 'Request finished successfully', 'request_id': data['request_id'], 'finished_at': date_now}), 200
     except Exception as e:

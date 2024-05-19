@@ -3,3 +3,4 @@ psycopg2-binary==2.8.6
 Flask-JWT-Extended==3.24.1
 fastapi
 redis
+pika==1.2.0
