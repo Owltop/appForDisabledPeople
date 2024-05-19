@@ -5,12 +5,16 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.example.disabledpeople.R;
 
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
@@ -32,17 +36,15 @@ public class ShowApplicationsActivity extends AppCompatActivity {
     AtomicInteger flagGetResponse = new AtomicInteger(0);
 
     private void SetUpApplicationModel() throws InterruptedException {
-//        while (flag.incrementAndGet() != 1) { // Тут хрень написана, не спасает от того, что сразу несколько запросов могут быть посланы на сервер
-//            flag.decrementAndGet();
-//        }
-        // Communicating with server
+        reliableGetApplicationsFromServer(currentOffset, 20);
+    }
+
+    private void reliableGetApplicationsFromServer(int offset, int numberOfApplications) throws InterruptedException {
         flagGetResponse.set(0);
-        getInfoFromServer(currentOffset, 20);
+        getInfoFromServer(offset, numberOfApplications);
         while (flagGetResponse.get() != 1) {
             // spinning
         }
-        //flag.decrementAndGet();
-
     }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +57,13 @@ public class ShowApplicationsActivity extends AppCompatActivity {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+        if (applications.isEmpty()) {
+            runOnUiThread(new Runnable() {
+                public void run() {
+                    Toast.makeText(getApplicationContext(), "Заявок нет", Toast.LENGTH_LONG).show();
+                }
+            });
+        }
 
         AP_RecyclerViewAdapter apRecyclerViewAdapter = new AP_RecyclerViewAdapter(this, applications);
 
@@ -65,13 +74,20 @@ public class ShowApplicationsActivity extends AppCompatActivity {
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 int lastVisiblePosition = recyclerView.getChildAdapterPosition(recyclerView.getChildAt(recyclerView.getChildCount() - 1));
 
-                // Если достигнут конец списка и есть ещё объекты для загрузки
                 if (lastVisiblePosition >= apRecyclerViewAdapter.getItemCount() - 1) {
-                    // Загрузить больше объектов с сервера
                     int sizeOfApplicationsBeforeServerCommunication = applications.size();
-                    getInfoFromServer(currentOffset, 10);
+                    try {
+                        reliableGetApplicationsFromServer(currentOffset, 10);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
                     if (applications.size() == sizeOfApplicationsBeforeServerCommunication) {
-                        Log.e("ServerError", "Couldn't download information from the server");
+                        Log.e("ServerError", "Couldn't download more information from the server");
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                Toast.makeText(getApplicationContext(), "Загружены все заявки", Toast.LENGTH_LONG).show();
+                            }
+                        });
                     } else {
                         currentOffset += applications.size() - sizeOfApplicationsBeforeServerCommunication;
                         apRecyclerViewAdapter.addAll((ArrayList<Application>) applications.subList(sizeOfApplicationsBeforeServerCommunication, applications.size()));
@@ -85,48 +101,84 @@ public class ShowApplicationsActivity extends AppCompatActivity {
         new Thread(() -> {
         HttpURLConnection connection = null;
         try {
-            Log.e("startServer", "");
-            URL url = new URL(serverUtil.SERVER_URL + "get_applications/");
+            URL url = new URL(serverUtil.SERVER_URL + "get_active_requests");
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
-            // connection.setDoOutput(true);
             connection.setRequestProperty("Content-Type", "application/json");
-            connection.setRequestProperty("Offset", offset + ""); // Java hack
+            connection.setRequestProperty("Offset", offset + ""); // Java hack // TODO: поддержка на сервере
             connection.setRequestProperty("NumberOfApplications", numberOfApplications + ""); // Java hack
 
-            Log.e("sendRequest", offset + " " + numberOfApplications);
+            SharedPreferences sharedPref = getSharedPreferences("my_preferences", Context.MODE_PRIVATE);
+            String token = sharedPref.getString("token", null);
+            String login = sharedPref.getString("login", null);
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-            String line;
-            StringBuilder response = new StringBuilder();
-
-            while ((line = reader.readLine()) != null) {
-                response.append(line);
+            if (token == null || login == null) {
+                runOnUiThread(new Runnable() {
+                    public void run() {
+                        Toast.makeText(getApplicationContext(), "Сначала авторизуйтесь", Toast.LENGTH_LONG).show();
+                    }
+                });
+                return;
             }
+
+            connection.setRequestProperty("volunteer", login);
+            connection.setRequestProperty("token", token);
+            connection.setRequestProperty("region", "Moscow");
+
+            OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
+            writer.write(1);
+            writer.flush();
 
             int responseCode = connection.getResponseCode();
             if (responseCode == HttpURLConnection.HTTP_OK) {
-                JSONArray jsonArray = new JSONArray(response.toString());
+                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line).append("\n");
+                }
+                String response = sb.toString();
+
+                JSONObject json = new JSONObject(response);
+                JSONArray jsonArray = json.getJSONArray("active_requests");
+
 
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject jsonApplication = jsonArray.getJSONObject(i);
-                    String nameOfUser = jsonApplication.getString("userName");
-                    String nameOfApplication = jsonApplication.getString("applicationName");
-                    String descriptionOfApplication = jsonApplication.getString("applicationDescription");
-                    Log.println(Log.INFO, "descriptionOfApplication" ,descriptionOfApplication);
+                    String id = jsonApplication.getString("id");
+                    String author = jsonApplication.getString("author");
+                    String description = jsonApplication.getString("description");
+                    // latitude and longtitude skip
+                    String region = jsonApplication.getString("region");
+                    // created_at skip
 
-                    Application application = new Application(nameOfUser, nameOfApplication, descriptionOfApplication);
+                    Application application = new Application(id, author, description, region, "igordemushkin@gmail.com"); // TODO: поддержать на сервере
                     applications.add(application);
                 }
             }
         } catch (ProtocolException | MalformedURLException | JSONException ignored) {
+            Log.e("ProtocolException | MalformedURLException | JSONException ignored", "Exception");
+            runOnUiThread(new Runnable() {
+                public void run() {
+                    Toast.makeText(getApplicationContext(), "Internal Error", Toast.LENGTH_LONG).show();
+                }
+            });
         } catch (IOException e) {
             String errorMessage = "An error occurred: " + e.getMessage();
-            Log.e("4cwercwerc", errorMessage);
-            //Toast.makeText(this, "kek", Toast.LENGTH_LONG).show();
+            Log.e("IOException", errorMessage + serverUtil.SERVER_URL);
+            runOnUiThread(new Runnable() {
+                public void run() {
+                    Toast.makeText(getApplicationContext(),  errorMessage, Toast.LENGTH_LONG).show();
+                }
+            });
         } catch (RuntimeException e) {
-            Log.e("RuntimeException", e.toString());
-            //Toast.makeText(this, "kek", Toast.LENGTH_LONG).show();
+            Log.e("RuntimeException", "RuntimeException");
+            runOnUiThread(new Runnable() {
+                public void run() {
+                    Toast.makeText(getApplicationContext(), "RuntimeException", Toast.LENGTH_LONG).show();
+                }
+            });
         } finally {
             if (connection != null) {
                 connection.disconnect();

@@ -1,9 +1,11 @@
 package com.example.disabledpeople.ui;
 
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -32,7 +34,10 @@ public class AP_RecyclerViewAdapter extends RecyclerView.Adapter<AP_RecyclerView
 
     @Override
     public void onBindViewHolder(@NonNull AP_RecyclerViewAdapter.MyViewHolder holder, int position) {
-        holder.appName.setText(applications.get(position).applicationName);
+        holder.userName.setText(applications.get(position).userName);
+        holder.description.setText(applications.get(position).description);
+        holder.region.setText(applications.get(position).region);
+        holder.email.setText(applications.get(position).email);
     }
 
     @Override
@@ -48,11 +53,32 @@ public class AP_RecyclerViewAdapter extends RecyclerView.Adapter<AP_RecyclerView
 
     public static class MyViewHolder extends RecyclerView.ViewHolder {
 
-        TextView appName;
+        TextView userName;
+        TextView description;
+        TextView region;
+        TextView email;
+        Button finishButton;
+        Button takeButton;
+
+        
+
+
         public MyViewHolder(@NonNull View itemView) {
             super(itemView);
 
-            appName = itemView.findViewById(R.id.applicationText);
+            userName = itemView.findViewById(R.id.userName);
+            description = itemView.findViewById(R.id.description);
+            region = itemView.findViewById(R.id.region);
+            email = itemView.findViewById(R.id.email);
+            finishButton = itemView.findViewById(R.id.finishButton);
+            takeButton = itemView.findViewById(R.id.takeButton);
+
+            finishButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    //
+                }
+            });
         }
     }
 }

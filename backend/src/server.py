@@ -79,6 +79,45 @@ def generate_token():
 @app.route('/register', methods=['POST'])
 def register_user():
     data = request.json
+    print(data)
+    
+    if not all(k in data for k in ('name', 'login', 'password', 'email', 'age', 'account_type')):
+        print('Missing fields')
+        return jsonify({'error': 'Missing fields'}), 400
+    
+    if data['account_type'] != 'volunteer' and data['account_type'] != 'customer':
+        print('Account type has to be either volunteer or customer')
+        return jsonify({'error': 'Account type has to be either volunteer or customer'}), 400
+
+    hashed_password = hash_password(data['password'])
+
+    try:
+        conn = connect_db()
+        cur = conn.cursor()
+        
+        cur.execute("SELECT * FROM users WHERE login = %s OR email = %s;", (data['login'], data['email'])) # TODO: ERROR:  column "account_type" does not exist at character 29
+        if cur.fetchone():
+            return jsonify({'error': 'User already exists'}), 400
+        token = generate_token()
+        cur.execute(f"INSERT INTO users (name, login, password, email, age, account_type, token) VALUES ('{data['name']}', '{data['login']}', '{hashed_password}', '{data['email']}', '{data['age']}', '{data['account_type']}', '{token}') RETURNING id;")
+        user_id = cur.fetchone()[0]
+        conn.commit()
+        
+        
+        
+        return jsonify({'message': 'User registered successfully', 'token': token}), 201
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if cur is not None:
+            cur.close()
+        if conn is not None:
+            conn.close()
+
+@app.route('/update', methods=['POST']) # TDDO
+def update_user():
+    data = request.json
     
     if not all(k in data for k in ('name', 'login', 'password', 'email', 'age', 'account_type')):
         return jsonify({'error': 'Missing fields'}), 400

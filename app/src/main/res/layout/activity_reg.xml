@@ -71,6 +71,19 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView6" />
 
+    <TextView
+        android:id="@+id/textView8"
+        android:layout_width="157dp"
+        android:layout_height="38dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="84dp"
+        android:autoText="false"
+        android:text="@string/account_type"
+        app:layout_constraintEnd_toStartOf="@+id/age_reg"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView7" />
+
     <EditText
         android:id="@+id/name_reg"
         android:layout_width="221dp"
@@ -126,6 +139,17 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/email_reg" />
 
+    <EditText
+        android:id="@+id/account_type_reg"
+        android:layout_width="221dp"
+        android:layout_height="51dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginEnd="28dp"
+        android:ems="10"
+        android:inputType="textEmailAddress"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/age_reg" />
+
     <TextView
         android:id="@+id/warningTextReg"
         android:layout_width="wrap_content"
@@ -136,10 +160,10 @@
         android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.453"
+        app:layout_constraintHorizontal_bias="0.449"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.461" />
+        app:layout_constraintVertical_bias="0.548" />
 
     <Button
         android:id="@+id/button"
