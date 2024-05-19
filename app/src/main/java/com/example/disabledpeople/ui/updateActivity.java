@@ -41,7 +41,7 @@ public class updateActivity extends AppCompatActivity {
         String password = ((TextView)findViewById(R.id.password_update)).getText().toString();
         String email = ((TextView)findViewById(R.id.email_update)).getText().toString();
         String age = ((TextView)findViewById(R.id.age_update)).getText().toString();
-        // TODO: token
+
         if (name.isEmpty() || login.isEmpty() || password.isEmpty() || email.isEmpty() || age.isEmpty()) {
             ((TextView)findViewById(R.id.warningTextUpdate)).setVisibility(View.VISIBLE);
         } else {
@@ -91,7 +91,6 @@ public class updateActivity extends AppCompatActivity {
 
                 Log.e("response", response);
                 JSONObject json = new JSONObject(response);
-                String message = json.getString("message");
 
                 if (responseCode == HttpURLConnection.HTTP_OK) {
                     runOnUiThread(new Runnable() {
@@ -100,9 +99,10 @@ public class updateActivity extends AppCompatActivity {
                         }
                     });
                 } else {
+                    String error = json.getString("error");
                     runOnUiThread(new Runnable() {
                         public void run() {
-                            Toast.makeText(getApplicationContext(), "Something wrong", Toast.LENGTH_LONG).show();
+                            Toast.makeText(getApplicationContext(), error, Toast.LENGTH_LONG).show();
                         }
                     });
                 }

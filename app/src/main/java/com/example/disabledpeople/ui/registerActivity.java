@@ -46,17 +46,18 @@ public class registerActivity extends AppCompatActivity {
         String password = ((TextView)findViewById(R.id.password_reg)).getText().toString();
         String email = ((TextView)findViewById(R.id.email_reg)).getText().toString();
         String age = ((TextView)findViewById(R.id.age_reg)).getText().toString();
-        if (name.isEmpty() || login.isEmpty() || password.isEmpty() || email.isEmpty() || age.isEmpty()) {
-            ((TextView)findViewById(R.id.warningTextReg)).setVisibility(View.VISIBLE);
+        String account_type = ((TextView)findViewById(R.id.account_type_reg)).getText().toString();
+        if (name.isEmpty() || login.isEmpty() || password.isEmpty() || email.isEmpty() || age.isEmpty() || account_type.isEmpty()) {
+            ((TextView)findViewById(R.id.warningTextReg)).setVisibility(View.VISIBLE); // TODO: проверить account_type тут
         } else {
             InputMethodManager imm = (InputMethodManager) this.getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
 
-            sendRegInfoToServer(name, login, password, email, age);
+            sendRegInfoToServer(name, login, password, email, age, account_type);
         }
     }
 
-    public void sendRegInfoToServer(String name, String login, String password, String email, String age) { // 0 - OK,
+    public void sendRegInfoToServer(String name, String login, String password, String email, String age, String account_type) { // 0 - OK,
         new Thread(() -> {
             HttpURLConnection connection = null;
             try {
@@ -66,37 +67,44 @@ public class registerActivity extends AppCompatActivity {
                 connection.setDoOutput(true);
                 connection.setRequestProperty("Content-Type", "application/json");
 
-                String data = "{ \"name\": \"" + name + "\", \"login\": \"" + login + "\", \"password\": \"" + password + "\", \"email\": \"" + email + "\", \"age\": \"" + age + "\" }";
+                String data = "{ \"name\": \"" + name + "\", \"login\": \"" + login + "\", \"password\": \"" + password + "\", \"email\": \"" + email + "\", \"age\": \"" + age + "\", \"account_type\": \"" + account_type + "\" }";
 
                 OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
                 writer.write(data);
                 writer.flush();
 
                 int responseCode = connection.getResponseCode();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                Log.e("evrerv", responseCode+"");
 
+                Log.e("kkek", "krkfe1");
+                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                Log.e("kkek", "krkfe2");
                 StringBuilder sb = new StringBuilder();
+                Log.e("kkek", "krkfe3");
                 String line;
                 while ((line = reader.readLine()) != null) {
+
+                    Log.e("line", line);
                     sb.append(line).append("\n");
                 }
                 String response = sb.toString();
+                Log.e("resp", response);
 
                 JSONObject json = new JSONObject(response);
-                String token = json.getString("token");
-                SharedPreferences sharedPref = getSharedPreferences("my_preferences", Context.MODE_PRIVATE);
-                SharedPreferences.Editor editor = sharedPref.edit();
-                editor.putString("token", token);
-                editor.apply();
-
                 if (responseCode == HttpURLConnection.HTTP_OK || responseCode == HttpURLConnection.HTTP_CREATED) {
+                    String token = json.getString("token");
+                    SharedPreferences sharedPref = getSharedPreferences("my_preferences", Context.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = sharedPref.edit();
+                    editor.putString("token", token);
+                    editor.apply();
                     runOnUiThread(new Runnable() {
                         public void run() {
                             Toast.makeText(getApplicationContext(), "Вы успешно зарегестрировались", Toast.LENGTH_LONG).show();
                         }
                     });
                 } else {
-                    Toast.makeText(this, "Something wrong " + responseCode, Toast.LENGTH_LONG).show();
+                    String error = json.getString("error");
+                    Toast.makeText(this, error, Toast.LENGTH_LONG).show();
                 }
             }  catch (SocketTimeoutException e) {
                 Log.e("SocketTimeoutException", serverUtil.SERVER_URL);

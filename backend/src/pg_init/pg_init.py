@@ -35,6 +35,7 @@ cur.execute("""
     );       
     
 """)
+print("kek")
 conn.commit()
 cur.close()
 conn.close()

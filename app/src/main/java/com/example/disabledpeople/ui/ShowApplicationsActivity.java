@@ -5,6 +5,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
@@ -12,6 +14,7 @@ import android.widget.Toast;
 import com.example.disabledpeople.R;
 
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
@@ -98,36 +101,59 @@ public class ShowApplicationsActivity extends AppCompatActivity {
         new Thread(() -> {
         HttpURLConnection connection = null;
         try {
-            Log.e("startServer", "");
-            URL url = new URL(serverUtil.SERVER_URL + "get_applications/");
+            URL url = new URL(serverUtil.SERVER_URL + "get_active_requests");
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.setRequestProperty("Content-Type", "application/json");
-            connection.setRequestProperty("Offset", offset + ""); // Java hack
+            connection.setRequestProperty("Offset", offset + ""); // Java hack // TODO: поддержка на сервере
             connection.setRequestProperty("NumberOfApplications", numberOfApplications + ""); // Java hack
 
-            Log.e("sendRequest", offset + " " + numberOfApplications);
+            SharedPreferences sharedPref = getSharedPreferences("my_preferences", Context.MODE_PRIVATE);
+            String token = sharedPref.getString("token", null);
+            String login = sharedPref.getString("login", null);
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-            String line;
-            StringBuilder response = new StringBuilder();
-
-            while ((line = reader.readLine()) != null) {
-                response.append(line);
+            if (token == null || login == null) {
+                runOnUiThread(new Runnable() {
+                    public void run() {
+                        Toast.makeText(getApplicationContext(), "Сначала авторизуйтесь", Toast.LENGTH_LONG).show();
+                    }
+                });
+                return;
             }
+
+            connection.setRequestProperty("volunteer", login);
+            connection.setRequestProperty("token", token);
+            connection.setRequestProperty("region", "Moscow");
+
+            OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
+            writer.write(1);
+            writer.flush();
 
             int responseCode = connection.getResponseCode();
             if (responseCode == HttpURLConnection.HTTP_OK) {
-                JSONArray jsonArray = new JSONArray(response.toString());
+                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line).append("\n");
+                }
+                String response = sb.toString();
+
+                JSONObject json = new JSONObject(response);
+                JSONArray jsonArray = json.getJSONArray("active_requests");
+
 
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject jsonApplication = jsonArray.getJSONObject(i);
-                    String nameOfUser = jsonApplication.getString("userName");
-                    String nameOfApplication = jsonApplication.getString("applicationName");
-                    String descriptionOfApplication = jsonApplication.getString("applicationDescription");
-                    Log.println(Log.INFO, "descriptionOfApplication" ,descriptionOfApplication);
+                    String id = jsonApplication.getString("id");
+                    String author = jsonApplication.getString("author");
+                    String description = jsonApplication.getString("description");
+                    // latitude and longtitude skip
+                    String region = jsonApplication.getString("region");
+                    // created_at skip
 
-                    Application application = new Application(nameOfUser, nameOfApplication, descriptionOfApplication);
+                    Application application = new Application(id, author, description, region, "igordemushkin@gmail.com"); // TODO: поддержать на сервере
                     applications.add(application);
                 }
             }

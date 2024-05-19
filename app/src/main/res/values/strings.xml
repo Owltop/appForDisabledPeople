@@ -6,6 +6,7 @@
     <string name="User_name">Ваше имя</string>
     <string name="Task_name">Название заявки</string>
     <string name="Task_description">Описание заявки</string>
+    <string name="Task_region">Регион выполнения</string>
     <string name="Warning">Заполните все поля!</string>
     <string name="Send_application">Отправить заявку</string>
     <string name="Reg_a_user">Зарегестрироваться</string>
@@ -27,6 +28,7 @@
     <string name="password">Пароль</string>
     <string name="email">Почта</string>
     <string name="age">Возраст</string>
+    <string name="account_type">Тип аккаунта("волонтер" или "заказчик")</string>
     <string-array name="for_recycler_view_test">
         <item>kek1</item>
         <item>kek2</item>
