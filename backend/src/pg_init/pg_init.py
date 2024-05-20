@@ -32,7 +32,14 @@ cur.execute("""
     status TEXT,
     created_at TEXT,
     finished_at TEXT
-    );       
+    ); 
+
+    CREATE TABLE IF NOT EXISTS ratings (
+    id serial PRIMARY KEY,
+    login TEXT NOT NULL,
+    token TEXT,
+    rating INTEGER
+    );      
     
 """)
 print("kek")

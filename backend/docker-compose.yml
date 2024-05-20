@@ -1,6 +1,14 @@
 version: '3.8'
 
 services:
+  rabbitmq:
+    image: "rabbitmq:3-management"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - my-network
+    restart: always
   postgresql:
     container_name: "postgresql"
     image: postgres:15.5
@@ -14,7 +22,6 @@ services:
     networks:
       - my-network
     volumes:
-      # - ./configs/create-multiple-db-with-users.sh:/docker-entrypoint-initdb.d/create-multiple-db-with-users.sh:ro
       - ./configs/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: "pg_isready -U postgres"
@@ -32,6 +39,7 @@ services:
     depends_on:
       - app1
       - app2
+      - statistics
     restart: always
   app1:
     image: app
@@ -44,6 +52,7 @@ services:
         - my-network
     depends_on:
       - postgresql
+      - rabbitmq
   app2:
     image: app
     build:
@@ -55,6 +64,18 @@ services:
         - my-network
     depends_on:
       - postgresql
+      - rabbitmq
+  statistics:
+    build:
+      context: .
+      dockerfile: ./src/statistics/Dockerfile
+    ports:
+      - "5053:5053"
+    networks:
+        - my-network
+    depends_on:
+      - postgresql
+      - rabbitmq
   redis:
     image: "redis:alpine"
     ports:
