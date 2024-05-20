@@ -62,34 +62,37 @@ def connect_db():
     return conn
 
 def callback(ch, method, properties, body):
+    app.logger.error("hahah in callback")
     data = json.loads(body)
     login = data['login']
     token = data['token']
-    print(f"Received username: {login}, token: {token}")
-
+    app.logger.error(f"Received username: {login}, token: {token}")
+    
     try:
         conn = connect_db()
         with conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT rating FROM users WHERE login = %s", (data['execloginutor'],))
+                cur.execute("SELECT rating FROM ratings WHERE login = %s", (login,))
+                app.logger.error("hahah after select")
                 rating = 0
                 prev_rating = cur.fetchone()
                 if prev_rating is None:
                     cur.execute(f"INSERT INTO ratings (login, token, rating) VALUES ('{login}', '{token}', '{rating}') RETURNING id;")
                 else:
                     rating = prev_rating[0]
-                
+                rating += 1
+                app.logger.error("hahah after inc rating")
                 cur.execute("""
                     UPDATE ratings
                     SET rating = %s
                     WHERE login = %s;
                 """, (rating, login))
 
-                print(f"Rating was updated for user = {login}")
+                app.logger.error(f"Rating was updated for user = {login}")
 
                 conn.commit()
     except Exception as e:
-        print(str(e))
+        app.logger.error(str(e))
     finally:
         if conn:
             conn.close()
@@ -101,11 +104,12 @@ def consume():
     channel.queue_declare(queue='user_events')
     
     channel.basic_consume(queue='user_events', on_message_callback=callback, auto_ack=True)
-    
-    print('Waiting for messages. To exit press CTRL+C')
+    app.logger.error("hahah after queue declration")
+    app.logger.error('Waiting for messages. To exit press CTRL+C')
     channel.start_consuming()
 
 def start_rabbitmq_consumer():
+    app.logger.error("hahah start consuming")
     t = threading.Thread(target=consume)
     t.start()
 
@@ -113,6 +117,7 @@ def start_rabbitmq_consumer():
 
 @app.route('/get_rating', methods=['GET'])
 def get_rating():
+    app.logger.error("in get rating")
     volunteer = request.args.get('volunteer')
     token = request.args.get('token')
 
@@ -145,6 +150,5 @@ args = parser.parse_args()
 port = args.port
 
 start_rabbitmq_consumer()
-logging.debug("rabit mq has started")
-print(f"Server running at http://{ip_address}:{port}/")
+app.logger.error(f"Server running at http://{ip_address}:{port}/")
 app.run(debug=True, host=ip_address, port=port)
