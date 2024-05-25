@@ -15,6 +15,7 @@ import com.example.disabledpeople.R;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
@@ -72,25 +73,29 @@ public class registerActivity extends AppCompatActivity {
                 OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
                 writer.write(data);
                 writer.flush();
-
                 int responseCode = connection.getResponseCode();
                 Log.e("evrerv", responseCode+"");
 
                 Log.e("kkek", "krkfe1");
-                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                BufferedReader reader;
+                if (responseCode == 200 || responseCode == 201) {
+                    reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                } else {
+                    reader = new BufferedReader(new InputStreamReader(connection.getErrorStream()));
+                }
                 Log.e("kkek", "krkfe2");
                 StringBuilder sb = new StringBuilder();
-                Log.e("kkek", "krkfe3");
                 String line;
                 while ((line = reader.readLine()) != null) {
-
-                    Log.e("line", line);
                     sb.append(line).append("\n");
                 }
                 String response = sb.toString();
-                Log.e("resp", response);
 
                 JSONObject json = new JSONObject(response);
+                Log.e("kkek", "krkfe2");
+                Log.e("kkek", "krkfe3");
+                Log.e("resp", response);
+
                 if (responseCode == HttpURLConnection.HTTP_OK || responseCode == HttpURLConnection.HTTP_CREATED) {
                     String token = json.getString("token");
                     SharedPreferences sharedPref = getSharedPreferences("my_preferences", Context.MODE_PRIVATE);
@@ -104,7 +109,11 @@ public class registerActivity extends AppCompatActivity {
                     });
                 } else {
                     String error = json.getString("error");
-                    Toast.makeText(this, error, Toast.LENGTH_LONG).show();
+                    runOnUiThread(new Runnable() {
+                        public void run() {
+                            Toast.makeText(getApplicationContext(), error, Toast.LENGTH_LONG).show();
+                        }
+                    });
                 }
             }  catch (SocketTimeoutException e) {
                 Log.e("SocketTimeoutException", serverUtil.SERVER_URL);

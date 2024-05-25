@@ -41,18 +41,18 @@ public class updateActivity extends AppCompatActivity {
         String password = ((TextView)findViewById(R.id.password_update)).getText().toString();
         String email = ((TextView)findViewById(R.id.email_update)).getText().toString();
         String age = ((TextView)findViewById(R.id.age_update)).getText().toString();
-
-        if (name.isEmpty() || login.isEmpty() || password.isEmpty() || email.isEmpty() || age.isEmpty()) {
+        String account_type = ((TextView)findViewById(R.id.account_type_update)).getText().toString();
+        if (name.isEmpty() || login.isEmpty() || password.isEmpty() || email.isEmpty() || age.isEmpty() || account_type.isEmpty()) {
             ((TextView)findViewById(R.id.warningTextUpdate)).setVisibility(View.VISIBLE);
         } else {
             InputMethodManager imm = (InputMethodManager) this.getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
 
-            sendUpdateInfoToServer(name, login, password, email, age);
+            sendUpdateInfoToServer(name, login, password, email, age, account_type);
         }
     }
 
-    public void sendUpdateInfoToServer(String name, String login, String password, String email, String age) {
+    public void sendUpdateInfoToServer(String name, String login, String password, String email, String age, String account_type) {
         new Thread(() -> {
             HttpURLConnection connection = null;
             try {
@@ -72,7 +72,7 @@ public class updateActivity extends AppCompatActivity {
                     });
                     return;
                 }
-                String data = "{ \"name\": \"" + name + "\", \"login\": \"" + login + "\", \"password\": \"" + password + "\", \"email\": \"" + email + "\", \"age\": \"" + age + "\", \"token\": \"" + token + "\"}";
+                String data = "{ \"name\": \"" + name + "\", \"login\": \"" + login + "\", \"password\": \"" + password + "\", \"email\": \"" + email + "\", \"age\": \"" + age + "\", \"token\": \"" + token + "\", \"account_type\": \"" + account_type + "\"}";
 
                 OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
                 writer.write(data);
@@ -80,7 +80,12 @@ public class updateActivity extends AppCompatActivity {
 
                 int responseCode = connection.getResponseCode();
 
-                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                BufferedReader reader;
+                if (responseCode == 200 || responseCode == 201) {
+                    reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                } else {
+                    reader = new BufferedReader(new InputStreamReader(connection.getErrorStream()));
+                }
 
                 StringBuilder sb = new StringBuilder();
                 String line;

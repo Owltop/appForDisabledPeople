@@ -453,6 +453,9 @@ def create_request():
 
 ip_address = "0.0.0.0"
 
+
+logger = logging.getLogger("server")
+logger.setLevel(logging.DEBUG)
 parser = argparse.ArgumentParser()
 parser.add_argument('--port', help='port', default=5050)
 
