@@ -91,7 +91,7 @@ public class ApplicationFormActivity extends AppCompatActivity {
                 Log.e("response", response);
                 JSONObject json = new JSONObject(response);
 
-                if (responseCode == HttpURLConnection.HTTP_OK) {
+                if (responseCode == HttpURLConnection.HTTP_OK || responseCode == HttpURLConnection.HTTP_CREATED) {
                     runOnUiThread(new Runnable() {
                         public void run() {
                             Toast.makeText(getApplicationContext(), "Заявка успешно отправлена", Toast.LENGTH_LONG).show();

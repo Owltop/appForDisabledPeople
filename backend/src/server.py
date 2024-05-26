@@ -80,7 +80,7 @@ def generate_token():
 @app.route('/register', methods=['POST'])
 def register_user():
     data = request.json
-    print(data)
+    app.logger.debug("Received register message")
     
     if not all(k in data for k in ('name', 'login', 'password', 'email', 'age', 'account_type')):
         return jsonify({'error': 'Missing fields'}), 400
@@ -198,17 +198,17 @@ def login():
 
 @app.route('/accept_request', methods=['POST'])
 def accept_request():
-    data = request.json
-    
-    if not all(k in data for k in ('executor', 'region', 'account_type', 'token')):
-        return jsonify({'error': 'Missing fields'}), 400
-    
-    if data['account_type'] != 'volunteer':
-        return jsonify({'error': 'Account type has to be volunteer to accept requests'}), 400
-    status = 'assigned'
-
     try:
         conn = connect_db()
+        data = request.json
+        
+        if not all(k in data for k in ('executor', 'request_id', 'account_type', 'token')):
+            return jsonify({'error': 'Missing fields'}), 400
+        
+        if data['account_type'] != 'volunteer':
+            return jsonify({'error': 'Account type has to be volunteer to accept requests'}), 400
+        status = 'assigned'
+
         with conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT token FROM users WHERE login = %s", (data['executor'],))
@@ -216,18 +216,7 @@ def accept_request():
                 if real_token is None or real_token[0] != data['token']:
                     return jsonify({'error': 'Unauthorized'}), 401
 
-                cur.execute("""
-                    SELECT id FROM requests
-                    WHERE executor IS NULL AND region = %s
-                    ORDER BY created_at ASC
-                    FOR UPDATE SKIP LOCKED
-                    LIMIT 1;
-                """, (data['region'],))
-                picked_request = cur.fetchone()
-                if picked_request is None:
-                    return jsonify({'error': 'No requests available'}), 404
-
-                request_id = picked_request[0]
+                request_id = data['request_id']
                 cur.execute("""
                     UPDATE requests
                     SET executor = %s,
@@ -247,15 +236,18 @@ def accept_request():
 
 @app.route('/finish_request', methods=['POST'])
 def finish_request():
-    data = request.json
-
-    if not all(k in data for k in ('executor', 'request_id', 'account_type', 'token')):
-        return jsonify({'error': 'Missing fields'}), 400
-
-    if data['account_type'] != 'volunteer':
-        return jsonify({'error': 'Account type has to be volunteer to finish requests'}), 400
-
     try:
+        data = request.json
+
+        if not all(k in data for k in ('executor', 'request_id', 'account_type', 'token')):
+            return jsonify({'error': 'Missing fields'}), 400
+
+        if data['account_type'] != 'customer':
+            return jsonify({'error': 'Account type has to be customer to finish requests'}), 400
+        
+        app.logger.debug(data['executor']) # really customer
+        app.logger.debug(data['request_id'])
+
         conn = connect_db()
         with conn:
             with conn.cursor() as cur:
@@ -269,7 +261,7 @@ def finish_request():
                 cur.execute("""
                     UPDATE requests
                     SET status = 'finish', finished_at = %s
-                    WHERE id = %s AND executor = %s;
+                    WHERE id = %s AND author = %s;
                 """, (date_now, data['request_id'], data['executor']))
                 
                 if cur.rowcount == 0:
@@ -300,32 +292,33 @@ def finish_request():
 
 @app.route('/get_active_requests', methods=['GET'])
 def get_active_requests():
-    volunteer = request.args.get('volunteer')
-    token = request.args.get('token')
-    region = request.args.get('region')
+    login = request.headers.get('login')
+    token = request.headers.get('token')
+    region = request.headers.get('region')
+    
 
-    if not volunteer or not token or not region:
+    if not login or not token or not region:
         return jsonify({'error': 'Missing parameters'}), 400     
 
     redis_key = f"status:created"
     
-    if r.exists(redis_key):
-        results = r.get(redis_key)
-        return jsonify({'active_requests': json.loads(results)}), 200
+    # if r.exists(redis_key):
+    #     results = r.get(redis_key)
+    #     return jsonify({'active_requests': json.loads(results)}), 200
 
     try:
         conn = connect_db()
         with conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT token, account_type FROM users WHERE login = %s", (volunteer,))
+                cur.execute("SELECT token, account_type FROM users WHERE login = %s", (login,))
                 user_data = cur.fetchone()
-                if not user_data or user_data[0] != token or user_data[1] != 'volunteer':
+                if not user_data or user_data[0] != token:
                     return jsonify({'error': 'Unauthorized or incorrect account type'}), 401
 
                 cur.execute("""
                     SELECT id, author, description, latitude, longitude, region, created_at
                     FROM requests
-                    WHERE executor IS NULL AND region = %s
+                    WHERE executor IS NULL AND region = %s AND status != 'finish' AND status != 'assigned'
                     FOR UPDATE SKIP LOCKED;
                 """, (region,))
                 requests = cur.fetchall()
@@ -342,6 +335,7 @@ def get_active_requests():
                     }
                     for req in requests
                 ]
+                app.logger.debug(results)
                 r.set(redis_key, json.dumps(results))
                 return jsonify({'active_requests': results}), 200
     except Exception as e:
@@ -353,8 +347,8 @@ def get_active_requests():
 
 @app.route('/get_customer_requests', methods=['GET'])
 def get_customer_requests():
-    customer = request.args.get('customer')
-    token = request.args.get('token')
+    customer = request.headers.get('customer')
+    token = request.headers.get('token')
 
     if not customer or not token:
         return jsonify({'error': 'Missing parameters'}), 400
@@ -454,8 +448,6 @@ def create_request():
 ip_address = "0.0.0.0"
 
 
-logger = logging.getLogger("server")
-logger.setLevel(logging.DEBUG)
 parser = argparse.ArgumentParser()
 parser.add_argument('--port', help='port', default=5050)
 

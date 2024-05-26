@@ -1,9 +1,9 @@
 <resources>
     <string name="app_name">Disabled people</string>
     <string name="title_home">Для волонтёров</string>
-    <string name="title_dashboard">Для инвалидов</string>
+    <string name="title_dashboard">Для клиентов</string>
     <string name="title_notifications">Карта</string>
-    <string name="User_name">Ваше имя</string>
+    <string name="User_name">Ваш логин</string>
     <string name="Task_name">Название заявки</string>
     <string name="Task_description">Описание заявки</string>
     <string name="Task_region">Регион выполнения</string>
@@ -28,7 +28,7 @@
     <string name="password">Пароль</string>
     <string name="email">Почта</string>
     <string name="age">Возраст</string>
-    <string name="account_type">Тип аккаунта("волонтер" или "заказчик")</string>
+    <string name="account_type">Тип аккаунта("волонтёр" или "заказчик")</string>
     <string-array name="for_recycler_view_test">
         <item>kek1</item>
         <item>kek2</item>

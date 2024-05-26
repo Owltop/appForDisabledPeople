@@ -48,6 +48,11 @@ public class registerActivity extends AppCompatActivity {
         String email = ((TextView)findViewById(R.id.email_reg)).getText().toString();
         String age = ((TextView)findViewById(R.id.age_reg)).getText().toString();
         String account_type = ((TextView)findViewById(R.id.account_type_reg)).getText().toString();
+        if (account_type.equals("волонтёр")) {
+            account_type = "volunteer";
+        } else if (account_type.equals("заказчик")) {
+            account_type = "customer";
+        }
         if (name.isEmpty() || login.isEmpty() || password.isEmpty() || email.isEmpty() || age.isEmpty() || account_type.isEmpty()) {
             ((TextView)findViewById(R.id.warningTextReg)).setVisibility(View.VISIBLE); // TODO: проверить account_type тут
         } else {

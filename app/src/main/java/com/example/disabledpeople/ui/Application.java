@@ -8,6 +8,7 @@ public class Application {
     public String email;
 
     public Application(String id, String userName, String description, String region, String email) {
+        this.id = id;
         this.userName = userName;
         this.description = description;
         this.region = region;
